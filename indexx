@@ -1,0 +1,1317 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>RawPips — Apple Premium Lot Size & Compounding Calculator</title>
+    <style>
+        :root {
+            --bg: #F5F5F7;
+            --surface: #FFFFFF;
+            --primary: #0071E3;
+            --accent: #34C759;
+            --warn: #FF9500;
+            --text: #1D1D1F;
+            --muted: #6E6E73;
+            --border: #D2D2D7;
+            --glass: rgba(255,255,255,0.6);
+            --glow: rgba(0,113,227,0.14);
+            --radius-lg: 14px;
+            --radius-md: 10px;
+            --space: 12px;
+            --shadow-soft: 0 8px 24px rgba(29,29,31,0.06);
+            --shadow-subtle: 0 4px 12px rgba(29,29,31,0.04);
+        }
+
+        html, body {
+            height: 100%;
+            margin: 0;
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial;
+            background: linear-gradient(180deg, var(--bg), #fbfbfc);
+            color: var(--text);
+            -webkit-font-smoothing: antialiased;
+            -moz-osx-font-smoothing: grayscale;
+        }
+        .app {
+            max-width: 1040px;
+            margin: 28px auto;
+            padding: 18px;
+            border-radius: 18px;
+            background: linear-gradient(180deg, rgba(255,255,255,1), var(--bg));
+            box-shadow: var(--shadow-soft);
+        }
+        header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 12px;
+            margin-bottom: 14px;
+            flex-wrap: wrap;
+        }
+        h1 {
+            font-size: 20px;
+            margin: 0;
+            font-weight: 600;
+            letter-spacing: -0.2px;
+        }
+        .lead {
+            color: var(--muted);
+            font-size: 13px;
+        }
+        .grid {
+            display: grid;
+            grid-template-columns: 360px 1fr;
+            gap: 18px;
+        }
+        @media (max-width: 900px) {
+            .grid { grid-template-columns: 1fr; }
+        }
+        .panel {
+            background: var(--surface);
+            border-radius: var(--radius-md);
+            padding: 14px;
+            box-shadow: var(--shadow-subtle);
+            border: 1px solid var(--border);
+        }
+        .controls {
+            max-height: 720px;
+            overflow: auto;
+            padding-right: 6px;
+        }
+        label {
+            display: block;
+            font-size: 13px;
+            color: var(--muted);
+            margin-bottom: 8px;
+        }
+        .field {
+            width: 100%;
+            padding: 12px;
+            border-radius: 10px;
+            border: 1px solid var(--border);
+            background: linear-gradient(180deg, #fff, #fbfbfb);
+            font-size: 15px;
+            color: var(--text);
+            box-sizing: border-box;
+            transition: border-color 0.2s, background 0.2s, box-shadow 0.2s;
+        }
+        .field:focus {
+            border-color: var(--primary);
+            background: #fff;
+            box-shadow: 0 0 0 3px var(--glow);
+            outline: none;
+        }
+        select.field {
+            appearance: none;
+            padding-right: 34px;
+            background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' fill='%236E6E73' viewBox='0 0 16 16'%3E%3Cpath d='M4 6l4 4 4-4z'/%3E%3C/svg%3E");
+            background-position: right 12px center;
+            background-repeat: no-repeat;
+        }
+        .row {
+            display: flex;
+            gap: 10px;
+        }
+        .col {
+            flex: 1;
+        }
+        .tiny {
+            font-size: 12px;
+            color: var(--muted);
+        }
+        .btn {
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            padding: 10px 14px;
+            border-radius: 12px;
+            border: 0;
+            background: linear-gradient(180deg, var(--primary), #0060c7);
+            color: #fff;
+            font-weight: 600;
+            cursor: pointer;
+            box-shadow: 0 6px 18px var(--glow);
+            transition: transform 0.12s ease, box-shadow 0.12s ease;
+        }
+        .btn:active {
+            transform: translateY(1px);
+        }
+        .btn.ghost {
+            background: transparent;
+            color: var(--text);
+            border: 1px solid var(--border);
+            box-shadow: none;
+        }
+        .actions {
+            display: flex;
+            gap: 8px;
+            margin-top: 12px;
+            align-items: center;
+            flex-wrap: wrap;
+        }
+        .visual-wrap {
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+        }
+        .canvas-card {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            height: 380px;
+            border-radius: 14px;
+            background: linear-gradient(180deg, rgba(255,255,255,0.85), #fff);
+            box-shadow: 0 10px 30px rgba(20,20,25,0.04);
+            border: 1px solid var(--border);
+            position: relative;
+            overflow: hidden;
+        }
+        .metrics {
+            display: flex;
+            gap: 12px;
+        }
+        .metric {
+            background: linear-gradient(180deg, #ffffff, #fbfbfb);
+            padding: 10px;
+            border-radius: 10px;
+            border: 1px solid var(--border);
+            flex: 1;
+            text-align: center;
+            box-shadow: var(--shadow-subtle);
+        }
+        .metric .label {
+            font-size: 12px;
+            color: var(--muted);
+        }
+        .metric .value {
+            font-size: 18px;
+            font-weight: 700;
+            color: var(--text);
+            margin-top: 6px;
+        }
+        hr.sep {
+            border: none;
+            height: 1px;
+            background: var(--border);
+            margin: 12px 0;
+            border-radius: 2px;
+        }
+        .note {
+            font-size: 13px;
+            color: var(--muted);
+            margin-top: 8px;
+        }
+        .kbd {
+            padding: 6px 8px;
+            border-radius: 8px;
+            background: linear-gradient(180deg, #f6f7f8, #fff);
+            border: 1px solid var(--border);
+            font-weight: 600;
+            color: var(--muted);
+        }
+        .glow {
+            position: absolute;
+            left: -60px;
+            top: -80px;
+            width: 360px;
+            height: 360px;
+            border-radius: 50%;
+            background: radial-gradient(circle at 35% 35%, var(--glow), transparent 40%);
+            pointer-events: none;
+            mix-blend-mode: screen;
+            filter: blur(18px);
+            opacity: 0.95;
+        }
+        .hidden {
+            display: none;
+        }
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 12px;
+        }
+        th, td {
+            padding: 8px;
+            text-align: left;
+            border-bottom: 1px solid var(--border);
+            font-size: 13px;
+        }
+        th {
+            font-weight: 600;
+            color: var(--text);
+        }
+        td {
+            color: var(--muted);
+        }
+        .table-wrap {
+            max-height: 200px;
+            overflow-y: auto;
+            border: 1px solid var(--border);
+            border-radius: 10px;
+            background: linear-gradient(180deg, #ffffff, #fbfbfb);
+        }
+        .tooltip {
+            position: absolute;
+            background: rgba(29,29,31,0.8);
+            color: #fff;
+            padding: 4px 8px;
+            border-radius: 4px;
+            font-size: 12px;
+            pointer-events: none;
+            display: none;
+        }
+    </style>
+</head>
+<body>
+    <div class="app" role="application" aria-label="RawPips Apple Premium Lot Size & Compounding Calculator">
+        <header>
+            <div>
+                <h1>RawPips · Lot Size & Compounding — Premium</h1>
+                <div class="lead">Apple-grade UI · Realtime sizing & compounding for XAUUSD · EURUSD · GBPUSD · Offline & embeddable</div>
+            </div>
+            <div class="tiny">No external libs • Worker-backed • Canvas visuals</div>
+        </header>
+        <div class="grid">
+            <div class="panel controls" aria-label="Controls">
+                <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px">
+                    <div style="display:flex;flex-direction:column">
+                        <span class="tiny">Tool</span>
+                        <select id="toolMode" class="field" aria-label="Select tool">
+                            <option value="lot">Lot Size Calculator</option>
+                            <option value="compound">Compounding Calculator</option>
+                            <option value="risk_reward">Risk-to-Reward Calculator</option>
+                        </select>
+                    </div>
+                    <div style="width:12px"></div>
+                    <div style="text-align:right">
+                        <button id="saveBtn" class="btn">Save</button>
+                    </div>
+                </div>
+
+                <!-- Lot Size Controls -->
+                <div id="lotControls">
+                    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px">
+                        <div style="display:flex;flex-direction:column">
+                            <span class="tiny">Instrument</span>
+                            <select id="symbol" class="field" aria-label="Select instrument">
+                                <option value="XAUUSD">XAUUSD</option>
+                                <option value="EURUSD">EURUSD</option>
+                                <option value="GBPUSD">GBPUSD</option>
+                                <option value="BTCUSD">BTCUSD</option>
+                                <option value="USOIL">USOIL</option>
+                                <option value="XAGUSD">XAGUSD</option>
+                            </select>
+                        </div>
+                    </div>
+                    <label for="balance">Account Balance</label>
+                    <input id="balance" class="field" type="number" inputmode="decimal" value="10000" aria-label="Account balance" />
+                    <div class="row" style="margin-top:10px">
+                        <div class="col">
+                            <label for="riskMode">Risk Mode</label>
+                            <select id="riskMode" class="field" aria-label="Risk mode">
+                                <option value="percent">Percent of balance</option>
+                                <option value="fixed">Fixed amount</option>
+                            </select>
+                        </div>
+                        <div style="width:12px"></div>
+                        <div class="col">
+                            <label for="slippage">Slippage (%)</label>
+                            <input id="slippage" class="field" type="number" step="0.01" value="0" aria-label="Slippage percentage" />
+                        </div>
+                    </div>
+                    <div id="riskPercentRow" style="margin-top:10px">
+                        <label for="riskPercent">Risk (%)</label>
+                        <input id="riskPercent" class="field" type="number" step="0.01" value="1.00" aria-label="Risk percentage" />
+                    </div>
+                    <div id="riskFixedRow" style="display:none;margin-top:10px">
+                        <label for="riskFixed">Risk (Fixed)</label>
+                        <input id="riskFixed" class="field" type="number" step="0.01" value="100" aria-label="Fixed risk amount" />
+                    </div>
+                    <label for="stopLoss" style="margin-top:12px">Stop Loss (pips / points)</label>
+                    <input id="stopLoss" class="field" type="number" step="0.01" value="300" aria-label="Stop loss in pips or points" />
+                </div>
+
+                <!-- Compounding Controls -->
+                <div id="compoundControls" class="hidden">
+                    <label for="initialBalance">Initial Balance</label>
+                    <input id="initialBalance" class="field" type="number" inputmode="decimal" value="10000" aria-label="Initial balance" />
+                    <label for="returnPercent">Return % per Period</label>
+                    <input id="returnPercent" class="field" type="number" step="0.01" value="5" aria-label="Return percentage per period" />
+                    <label for="numPeriods">Number of Periods</label>
+                    <input id="numPeriods" class="field" type="number" step="1" value="12" aria-label="Number of periods" />
+                    <label for="compoundFrequency">Compounding Frequency</label>
+                    <select id="compoundFrequency" class="field" aria-label="Compounding frequency">
+                        <option value="daily">Daily</option>
+                        <option value="weekly">Weekly</option>
+                        <option value="monthly">Monthly</option>
+                        <option value="quarterly">Quarterly</option>
+                        <option value="yearly">Yearly</option>
+                        <option value="per_trade">Per Trade</option>
+                    </select>
+                </div>
+
+                <!-- Risk-to-Reward Controls -->
+                <div id="riskRewardControls" class="hidden">
+                    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px">
+                        <div style="display:flex;flex-direction:column">
+                            <span class="tiny">Instrument</span>
+                            <select id="rrSymbol" class="field" aria-label="Select instrument">
+                                <option value="XAUUSD">XAUUSD</option>
+                                <option value="EURUSD">EURUSD</option>
+                                <option value="GBPUSD">GBPUSD</option>
+                                <option value="BTCUSD">BTCUSD</option>
+                                <option value="USOIL">USOIL</option>
+                                <option value="XAGUSD">XAGUSD</option>
+                            </select>
+                        </div>
+                    </div>
+                    <label for="rrBalance">Account Balance</label>
+                    <input id="rrBalance" class="field" type="number" inputmode="decimal" value="10000" aria-label="Account balance" />
+                    <label for="rrRiskPercent">Risk (%)</label>
+                    <input id="rrRiskPercent" class="field" type="number" step="0.01" value="1.00" aria-label="Risk percentage" />
+                    <label for="rrEntry">Entry Price</label>
+                    <input id="rrEntry" class="field" type="number" step="0.0001" value="1.1000" aria-label="Entry price" />
+                    <label for="rrStop">Stop Loss Price</label>
+                    <input id="rrStop" class="field" type="number" step="0.0001" value="1.0900" aria-label="Stop loss price" />
+                    <label for="rrTake">Take Profit Price</label>
+                    <input id="rrTake" class="field" type="number" step="0.0001" value="1.1200" aria-label="Take profit price" />
+                </div>
+
+                <div class="actions">
+                    <button id="resetBtn" class="btn ghost">Reset</button>
+                    <div style="margin-left:auto" class="tiny">Tip: Press <span class="kbd">Esc</span> to reset</div>
+                </div>
+                <div class="note" id="noteArea" aria-live="polite"></div>
+            </div>
+            <div class="panel" aria-label="Results">
+                <div class="visual-wrap">
+                    <div class="canvas-card" aria-hidden="false">
+                        <div class="glow" aria-hidden="true"></div>
+                        <canvas id="visualCanvas" width="900" height="420" style="max-width:100%;height:auto"></canvas>
+                        <div id="tooltip" class="tooltip"></div>
+                    </div>
+                    <div class="metrics" role="status" aria-live="polite" id="lotMetrics">
+                        <div class="metric">
+                            <div class="label">Risk Amount</div>
+                            <div id="riskAmount" class="value">$0.00</div>
+                        </div>
+                        <div class="metric">
+                            <div class="label">Pip / Point Value per lot</div>
+                            <div id="pipValue" class="value">$0.00</div>
+                        </div>
+                        <div class="metric">
+                            <div class="label">Calculated Lots</div>
+                            <div id="lotsResult" class="value">0.000</div>
+                        </div>
+                    </div>
+                    <div id="compoundResults" class="hidden">
+                        <div class="table-wrap">
+                            <table>
+                                <thead>
+                                    <tr>
+                                        <th>Period</th>
+                                        <th>Balance</th>
+                                        <th>Period Growth (%)</th>
+                                        <th>Cumulative Growth (%)</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="compoundTableBody"></tbody>
+                            </table>
+                        </div>
+                    </div>
+                    <div class="metrics hidden" role="status" aria-live="polite" id="rrMetrics">
+                        <div class="metric">
+                            <div class="label">Lot Size</div>
+                            <div id="rrLotSize" class="value">0.00</div>
+                        </div>
+                        <div class="metric">
+                            <div class="label">Risk:Reward</div>
+                            <div id="rrRatio" class="value">0:0</div>
+                        </div>
+                        <div class="metric">
+                            <div class="label">Potential Profit</div>
+                            <div id="rrProfit" class="value">$0.00</div>
+                        </div>
+                    </div>
+                    <div class="note" id="explain" style="margin-top:6px;color:var(--muted)"></div>
+                </div>
+            </div>
+        </div>
+        <div class="panel" style="margin-top: 18px;" aria-label="Instrument Profile Overrides" id="overridesPanel">
+            <hr class="sep" style="margin-top: 0;" />
+            <h3 style="margin:0 0 8px 0">Instrument profile overrides</h3>
+            <div class="tiny">Edit if your broker uses different definitions. Saved locally.</div>
+            <label for="contractSize" style="margin-top:10px">Contract size (units per 1.00 lot)</label>
+            <input id="contractSize" class="field" type="number" step="1" value="100" aria-label="Contract size" />
+            <label for="pipDefinition" style="margin-top:10px">Pip / Point definition (price units)</label>
+            <input id="pipDefinition" class="field" type="number" step="0.0001" value="0.01" aria-label="Pip definition" />
+            <div class="row" style="margin-top:10px">
+                <div class="col">
+                    <label for="minLot">Min Lot</label>
+                    <input id="minLot" class="field" type="number" step="0.01" value="0.01" aria-label="Minimum lot size" />
+                </div>
+                <div style="width:12px"></div>
+                <div class="col">
+                    <label for="lotStep">Lot Step</label>
+                    <input id="lotStep" class="field" type="number" step="0.01" value="0.01" aria-label="Lot step increment" />
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // === Configuration ===
+        const STORAGE_KEY = 'rawpips:premium:v5';
+        const DEFAULTS = {
+            toolMode: 'lot',
+            symbol: 'XAUUSD',
+            balance: 10000,
+            riskMode: 'percent',
+            riskPercent: 1.0,
+            riskFixed: 100,
+            stopLoss: 300,
+            slippagePct: 0,
+            initialBalance: 10000,
+            returnPercent: 5,
+            numPeriods: 12,
+            compoundFrequency: 'monthly',
+            rrSymbol: 'EURUSD',
+            rrBalance: 10000,
+            rrRiskPercent: 1.0,
+            rrEntry: 1.1000,
+            rrStop: 1.0900,
+            rrTake: 1.1200,
+            profiles: {
+                XAUUSD: { contractSize: 100, pipDefinition: 0.01, pipName: 'point', minLot: 0.01, lotStep: 0.01 },
+                EURUSD: { contractSize: 100000, pipDefinition: 0.0001, pipName: 'pip', minLot: 0.01, lotStep: 0.01 },
+                GBPUSD: { contractSize: 100000, pipDefinition: 0.0001, pipName: 'pip', minLot: 0.01, lotStep: 0.01 },
+                BTCUSD: { contractSize: 1, pipDefinition: 0.01, pipName: 'point', minLot: 0.01, lotStep: 0.01 },
+                USOIL: { contractSize: 1000, pipDefinition: 0.01, pipName: 'point', minLot: 0.01, lotStep: 0.01 },
+                XAGUSD: { contractSize: 5000, pipDefinition: 0.001, pipName: 'point', minLot: 0.01, lotStep: 0.01 }
+            }
+        };
+
+        // === Utilities ===
+        const Utils = {
+            num: (v, fallback = 0) => {
+                const n = typeof v === 'number' ? v : parseFloat(String(v || '').replace(/,/g, ''));
+                return Number.isFinite(n) ? n : fallback;
+            },
+            currency: (n) => {
+                try {
+                    return new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD', maximumFractionDigits: 2 }).format(n || 0);
+                } catch (e) {
+                    return '$' + (Number(n) || 0).toFixed(2);
+                }
+            },
+            percent: (n) => {
+                return n.toFixed(2) + '%';
+            },
+            clampToStep: (value, step, min) => {
+                const rounded = Math.round((value - min) / step) * step + min;
+                return Math.max(min, parseFloat(rounded.toFixed(8)));
+            },
+            debounce: (fn, wait = 140) => {
+                let t;
+                return (...args) => {
+                    clearTimeout(t);
+                    t = setTimeout(() => fn.apply(null, args), wait);
+                };
+            }
+        };
+
+        // === Persistence ===
+        const Persistence = {
+            loadState: () => {
+                try {
+                    const raw = localStorage.getItem(STORAGE_KEY);
+                    if (raw) {
+                        const parsed = JSON.parse(raw);
+                        return Object.assign({}, DEFAULTS, parsed);
+                    }
+                } catch (e) {
+                    console.warn('Load failed', e);
+                }
+                return JSON.parse(JSON.stringify(DEFAULTS));
+            },
+            saveState: (state) => {
+                try {
+                    localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
+                } catch (e) {
+                    console.warn('Save failed', e);
+                }
+            }
+        };
+
+        // === DOM References ===
+        const DOM = {
+            toolMode: document.getElementById('toolMode'),
+            lotControls: document.getElementById('lotControls'),
+            compoundControls: document.getElementById('compoundControls'),
+            riskRewardControls: document.getElementById('riskRewardControls'),
+            symbol: document.getElementById('symbol'),
+            balance: document.getElementById('balance'),
+            riskMode: document.getElementById('riskMode'),
+            riskPercent: document.getElementById('riskPercent'),
+            riskFixed: document.getElementById('riskFixed'),
+            stopLoss: document.getElementById('stopLoss'),
+            slippage: document.getElementById('slippage'),
+            initialBalance: document.getElementById('initialBalance'),
+            returnPercent: document.getElementById('returnPercent'),
+            numPeriods: document.getElementById('numPeriods'),
+            compoundFrequency: document.getElementById('compoundFrequency'),
+            rrSymbol: document.getElementById('rrSymbol'),
+            rrBalance: document.getElementById('rrBalance'),
+            rrRiskPercent: document.getElementById('rrRiskPercent'),
+            rrEntry: document.getElementById('rrEntry'),
+            rrStop: document.getElementById('rrStop'),
+            rrTake: document.getElementById('rrTake'),
+            contractSize: document.getElementById('contractSize'),
+            pipDefinition: document.getElementById('pipDefinition'),
+            minLot: document.getElementById('minLot'),
+            lotStep: document.getElementById('lotStep'),
+            saveBtn: document.getElementById('saveBtn'),
+            resetBtn: document.getElementById('resetBtn'),
+            noteArea: document.getElementById('noteArea'),
+            riskAmount: document.getElementById('riskAmount'),
+            pipValue: document.getElementById('pipValue'),
+            lotsResult: document.getElementById('lotsResult'),
+            explain: document.getElementById('explain'),
+            riskPercentRow: document.getElementById('riskPercentRow'),
+            riskFixedRow: document.getElementById('riskFixedRow'),
+            lotMetrics: document.getElementById('lotMetrics'),
+            compoundResults: document.getElementById('compoundResults'),
+            compoundTableBody: document.getElementById('compoundTableBody'),
+            rrMetrics: document.getElementById('rrMetrics'),
+            rrLotSize: document.getElementById('rrLotSize'),
+            rrRatio: document.getElementById('rrRatio'),
+            rrProfit: document.getElementById('rrProfit'),
+            overridesPanel: document.getElementById('overridesPanel'),
+            visualCanvas: document.getElementById('visualCanvas'),
+            tooltip: document.getElementById('tooltip')
+        };
+
+        // === State Management ===
+        let state = Persistence.loadState();
+        const StateManager = {
+            applyToUI: () => {
+                DOM.toolMode.value = state.toolMode;
+                UI.switchMode();
+                DOM.symbol.value = state.symbol;
+                DOM.balance.value = state.balance;
+                DOM.riskMode.value = state.riskMode;
+                DOM.riskPercent.value = state.riskPercent;
+                DOM.riskFixed.value = state.riskFixed;
+                DOM.stopLoss.value = state.stopLoss;
+                DOM.slippage.value = state.slippagePct || 0;
+                DOM.initialBalance.value = state.initialBalance;
+                DOM.returnPercent.value = state.returnPercent;
+                DOM.numPeriods.value = state.numPeriods;
+                DOM.compoundFrequency.value = state.compoundFrequency;
+                DOM.rrSymbol.value = state.rrSymbol;
+                DOM.rrBalance.value = state.rrBalance;
+                DOM.rrRiskPercent.value = state.rrRiskPercent;
+                DOM.rrEntry.value = state.rrEntry;
+                DOM.rrStop.value = state.rrStop;
+                DOM.rrTake.value = state.rrTake;
+                const p = state.profiles[state.toolMode === 'risk_reward' ? state.rrSymbol : state.symbol] || state.profiles.XAUUSD;
+                DOM.contractSize.value = p.contractSize;
+                DOM.pipDefinition.value = p.pipDefinition;
+                DOM.minLot.value = p.minLot;
+                DOM.lotStep.value = p.lotStep;
+                UI.toggleRiskRows();
+                UI.explainDefaults();
+            },
+            update: () => {
+                state.toolMode = DOM.toolMode.value;
+                if (state.toolMode === 'lot') {
+                    state.symbol = DOM.symbol.value;
+                    state.balance = Utils.num(DOM.balance.value, state.balance);
+                    state.riskMode = DOM.riskMode.value;
+                    state.riskPercent = Utils.num(DOM.riskPercent.value, state.riskPercent);
+                    state.riskFixed = Utils.num(DOM.riskFixed.value, state.riskFixed);
+                    state.stopLoss = Utils.num(DOM.stopLoss.value, state.stopLoss);
+                    state.slippagePct = Utils.num(DOM.slippage.value, state.slippagePct || 0);
+                    const prof = state.profiles[state.symbol] || {};
+                    prof.contractSize = Utils.num(DOM.contractSize.value, prof.contractSize);
+                    prof.pipDefinition = Utils.num(DOM.pipDefinition.value, prof.pipDefinition);
+                    prof.minLot = Utils.num(DOM.minLot.value, prof.minLot);
+                    prof.lotStep = Utils.num(DOM.lotStep.value, prof.lotStep);
+                    state.profiles[state.symbol] = prof;
+                } else if (state.toolMode === 'compound') {
+                    state.initialBalance = Utils.num(DOM.initialBalance.value, state.initialBalance);
+                    state.returnPercent = Utils.num(DOM.returnPercent.value, state.returnPercent);
+                    state.numPeriods = Utils.num(DOM.numPeriods.value, state.numPeriods);
+                    state.compoundFrequency = DOM.compoundFrequency.value;
+                } else if (state.toolMode === 'risk_reward') {
+                    state.rrSymbol = DOM.rrSymbol.value;
+                    state.rrBalance = Utils.num(DOM.rrBalance.value, state.rrBalance);
+                    state.rrRiskPercent = Utils.num(DOM.rrRiskPercent.value, state.rrRiskPercent);
+                    state.rrEntry = Utils.num(DOM.rrEntry.value, state.rrEntry);
+                    state.rrStop = Utils.num(DOM.rrStop.value, state.rrStop);
+                    state.rrTake = Utils.num(DOM.rrTake.value, state.rrTake);
+                    const prof = state.profiles[state.rrSymbol] || {};
+                    prof.contractSize = Utils.num(DOM.contractSize.value, prof.contractSize);
+                    prof.pipDefinition = Utils.num(DOM.pipDefinition.value, prof.pipDefinition);
+                    prof.minLot = Utils.num(DOM.minLot.value, prof.minLot);
+                    prof.lotStep = Utils.num(DOM.lotStep.value, prof.lotStep);
+                    state.profiles[state.rrSymbol] = prof;
+                }
+            }
+        };
+
+        // === UI Management ===
+        const UI = {
+            switchMode: () => {
+                const mode = DOM.toolMode.value;
+                DOM.lotControls.classList.add('hidden');
+                DOM.compoundControls.classList.add('hidden');
+                DOM.riskRewardControls.classList.add('hidden');
+                DOM.lotMetrics.classList.add('hidden');
+                DOM.compoundResults.classList.add('hidden');
+                DOM.rrMetrics.classList.add('hidden');
+                DOM.overridesPanel.classList.add('hidden');
+                if (mode === 'lot') {
+                    DOM.lotControls.classList.remove('hidden');
+                    DOM.lotMetrics.classList.remove('hidden');
+                    DOM.overridesPanel.classList.remove('hidden');
+                } else if (mode === 'compound') {
+                    DOM.compoundControls.classList.remove('hidden');
+                    DOM.compoundResults.classList.remove('hidden');
+                } else if (mode === 'risk_reward') {
+                    DOM.riskRewardControls.classList.remove('hidden');
+                    DOM.rrMetrics.classList.remove('hidden');
+                    DOM.overridesPanel.classList.remove('hidden');
+                }
+                UI.explainDefaults();
+            },
+            toggleRiskRows: () => {
+                DOM.riskPercentRow.style.display = DOM.riskMode.value === 'percent' ? 'block' : 'none';
+                DOM.riskFixedRow.style.display = DOM.riskMode.value === 'fixed' ? 'block' : 'none';
+            },
+            explainDefaults: () => {
+                const mode = DOM.toolMode.value;
+                if (mode === 'lot') {
+                    const p = state.profiles[state.symbol];
+                    DOM.explain.textContent = `Defaults: ${state.symbol} • pip/point = ${p.pipDefinition} • contract = ${p.contractSize} • min lot ${p.minLot} • step ${p.lotStep}`;
+                } else if (mode === 'compound') {
+                    DOM.explain.textContent = `Compounding: ${state.compoundFrequency} at ${state.returnPercent}% over ${state.numPeriods} periods`;
+                } else if (mode === 'risk_reward') {
+                    const p = state.profiles[state.rrSymbol];
+                    DOM.explain.textContent = `Defaults: ${state.rrSymbol} • pip/point = ${p.pipDefinition} • contract = ${p.contractSize} • min lot ${p.minLot} • step ${p.lotStep}`;
+                }
+            },
+            showNote: (msg, duration = 1800) => {
+                DOM.noteArea.textContent = msg;
+                setTimeout(() => DOM.noteArea.textContent = '', duration);
+            },
+            populateCompoundTable: (growthData) => {
+                DOM.compoundTableBody.innerHTML = '';
+                const initial = growthData[0] || state.initialBalance;
+                for (let i = 1; i < growthData.length; i++) {
+                    const balance = growthData[i];
+                    const periodGrowth = ((balance - growthData[i-1]) / growthData[i-1]) * 100;
+                    const cumulativeGrowth = ((balance - initial) / initial) * 100;
+                    const row = document.createElement('tr');
+                    row.innerHTML = `
+                        <td>${i}</td>
+                        <td>${Utils.currency(balance)}</td>
+                        <td>${Utils.percent(periodGrowth)}</td>
+                        <td>${Utils.percent(cumulativeGrowth)}</td>
+                    `;
+                    DOM.compoundTableBody.appendChild(row);
+                }
+            }
+        };
+
+        // === Calculation Worker ===
+        const CalcWorker = {
+            worker: null,
+            init: () => {
+                const workerSource = `
+                    self.onmessage = function(e) {
+                        const s = e.data;
+                        const clampToStep = (value, step, min) => {
+                            const rounded = Math.round((value - min) / step) * step + min;
+                            return Math.max(min, parseFloat(rounded.toFixed(8)));
+                        };
+                        if (s.mode === 'lot') {
+                            const balance = Number(s.balance) || 0;
+                            const riskMode = s.riskMode || 'percent';
+                            const riskPct = Number(s.riskPercent) || 0;
+                            const riskFixed = Number(s.riskFixed) || 0;
+                            const stopLoss = Number(s.stopLoss) || 0;
+                            const slippagePct = Number(s.slippagePct) || 0;
+                            const contractSize = Number(s.contractSize) || 1;
+                            const pipDefinition = Number(s.pipDefinition) || 0.0001;
+                            const minLot = Number(s.minLot) || 0.01;
+                            const lotStep = Number(s.lotStep) || 0.01;
+                            const pipValuePerLot = contractSize * pipDefinition;
+                            const baseRisk = riskMode === 'percent' ? (balance * (riskPct / 100)) : riskFixed;
+                            const riskWithBuffer = baseRisk * (1 + (slippagePct / 100));
+                            const denom = Math.max(1e-12, pipValuePerLot * Math.max(1e-12, stopLoss));
+                            const rawLots = denom > 0 ? (riskWithBuffer / denom) : 0;
+                            const lots = clampToStep(rawLots, lotStep, minLot);
+                            self.postMessage({ 
+                                mode: 'lot', 
+                                pipValuePerLot, 
+                                riskAmount: riskWithBuffer, 
+                                lots,
+                                rawLots,
+                                effectiveRiskPercent: (riskWithBuffer / balance) * 100 || 0
+                            });
+                        } else if (s.mode === 'compound') {
+                            const initialBalance = Number(s.initialBalance) || 0;
+                            const returnPercent = Number(s.returnPercent) || 0;
+                            const numPeriods = Math.round(Number(s.numPeriods)) || 0;
+                            const frequency = s.frequency || 'monthly';
+                            let periodsPerYear;
+                            switch (frequency) {
+                                case 'daily': periodsPerYear = 365; break;
+                                case 'weekly': periodsPerYear = 52; break;
+                                case 'monthly': periodsPerYear = 12; break;
+                                case 'quarterly': periodsPerYear = 4; break;
+                                case 'yearly': periodsPerYear = 1; break;
+                                case 'per_trade': periodsPerYear = null; break;
+                                default: periodsPerYear = 12;
+                            }
+                            const rate = returnPercent / 100;
+                            const finalBalance = initialBalance * Math.pow(1 + rate, numPeriods);
+                            const totalGrowth = ((finalBalance - initialBalance) / initialBalance) * 100;
+                            const effectivePeriodRate = numPeriods > 0 ? (Math.pow(finalBalance / initialBalance, 1 / numPeriods) - 1) * 100 : 0;
+                            let cagr = null;
+                            if (periodsPerYear && numPeriods > 0) {
+                                cagr = (Math.pow(1 + rate, periodsPerYear) - 1) * 100;
+                            }
+                            const growthData = [initialBalance];
+                            let currentBalance = initialBalance;
+                            for (let i = 1; i <= numPeriods; i++) {
+                                currentBalance *= (1 + rate);
+                                growthData.push(currentBalance);
+                            }
+                            self.postMessage({ 
+                                mode: 'compound', 
+                                finalBalance, 
+                                totalGrowth, 
+                                effectivePeriodRate, 
+                                cagr, 
+                                growthData 
+                            });
+                        } else if (s.mode === 'risk_reward') {
+                            const balance = Number(s.balance) || 0;
+                            const riskPct = Number(s.riskPercent) || 0;
+                            const entry = Number(s.entry) || 0;
+                            const stop = Number(s.stop) || 0;
+                            const take = Number(s.take) || 0;
+                            const contractSize = Number(s.contractSize) || 1;
+                            const pipDefinition = Number(s.pipDefinition) || 0.0001;
+                            const minLot = Number(s.minLot) || 0.01;
+                            const lotStep = Number(s.lotStep) || 0.01;
+                            const pipValuePerLot = contractSize * pipDefinition;
+                            const slDistancePips = Math.abs(entry - stop) / pipDefinition;
+                            const tpDistancePips = Math.abs(entry - take) / pipDefinition;
+                            const riskAmount = balance * (riskPct / 100);
+                            const denom = Math.max(1e-12, pipValuePerLot * Math.max(1e-12, slDistancePips));
+                            const rawLots = denom > 0 ? (riskAmount / denom) : 0;
+                            const lotSize = clampToStep(rawLots, lotStep, minLot);
+                            const potentialProfit = tpDistancePips * pipValuePerLot * lotSize;
+                            const rrRatio = riskAmount > 0 ? potentialProfit / riskAmount : 0;
+                            self.postMessage({ 
+                                mode: 'risk_reward', 
+                                lotSize, 
+                                rrRatio, 
+                                potentialProfit, 
+                                riskAmount, 
+                                slDistancePips, 
+                                tpDistancePips,
+                                rawLots,
+                                pipValuePerLot
+                            });
+                        }
+                    };
+                `;
+                CalcWorker.worker = new Worker(URL.createObjectURL(new Blob([workerSource], { type: 'application/javascript' })));
+                CalcWorker.worker.onmessage = (e) => {
+                    const d = e.data;
+                    if (d.mode === 'lot') {
+                        state.result = {
+                            pipValuePerLot: Number(d.pipValuePerLot) || 0,
+                            riskAmount: Number(d.riskAmount) || 0,
+                            lots: Number(d.lots) || 0,
+                            rawLots: Number(d.rawLots) || 0,
+                            effectiveRiskPercent: Number(d.effectiveRiskPercent) || 0
+                        };
+                        DOM.riskAmount.textContent = Utils.currency(state.result.riskAmount);
+                        DOM.pipValue.textContent = Utils.currency(state.result.pipValuePerLot);
+                        DOM.lotsResult.textContent = state.result.lots.toFixed(5);
+                        DOM.explain.textContent = `Est. loss at SL: ${Utils.currency(state.result.pipValuePerLot * state.result.lots * state.stopLoss)} · Raw lots: ${state.result.rawLots.toFixed(6)}`;
+                        Visuals.updateTargets(state.result.lots, state.result.pipValuePerLot, state.result.riskAmount, state.result.effectiveRiskPercent);
+                    } else if (d.mode === 'compound') {
+                        state.compoundResult = {
+                            finalBalance: Number(d.finalBalance) || 0,
+                            totalGrowth: Number(d.totalGrowth) || 0,
+                            effectivePeriodRate: Number(d.effectivePeriodRate) || 0,
+                            cagr: d.cagr !== null ? Number(d.cagr) : null,
+                            growthData: d.growthData || []
+                        };
+                        UI.populateCompoundTable(state.compoundResult.growthData);
+                        DOM.explain.textContent = `Growth over ${state.numPeriods} ${state.compoundFrequency} periods at ${state.returnPercent}%${state.compoundResult.cagr ? ` • CAGR: ${Utils.percent(state.compoundResult.cagr)}` : ''}`;
+                        Visuals.updateCompoundTargets(state.compoundResult.growthData);
+                    } else if (d.mode === 'risk_reward') {
+                        state.rrResult = {
+                            lotSize: Number(d.lotSize) || 0,
+                            rrRatio: Number(d.rrRatio) || 0,
+                            potentialProfit: Number(d.potentialProfit) || 0,
+                            riskAmount: Number(d.riskAmount) || 0,
+                            slDistancePips: Number(d.slDistancePips) || 0,
+                            tpDistancePips: Number(d.tpDistancePips) || 0,
+                            rawLots: Number(d.rawLots) || 0,
+                            pipValuePerLot: Number(d.pipValuePerLot) || 0
+                        };
+                        DOM.rrLotSize.textContent = state.rrResult.lotSize.toFixed(5);
+                        DOM.rrRatio.textContent = `1:${state.rrResult.rrRatio.toFixed(2)}`;
+                        DOM.rrProfit.textContent = Utils.currency(state.rrResult.potentialProfit);
+                        DOM.explain.textContent = `SL Distance: ${state.rrResult.slDistancePips.toFixed(2)} pips · TP Distance: ${state.rrResult.tpDistancePips.toFixed(2)} pips · Raw lots: ${state.rrResult.rawLots.toFixed(6)}`;
+                        Visuals.updateTargets(state.rrResult.lotSize, state.rrResult.pipValuePerLot, state.rrResult.riskAmount, state.rrResult.rrRatio);
+                    }
+                    Persistence.saveState(state);
+                };
+            },
+            requestCalc: () => {
+                StateManager.update();
+                const mode = state.toolMode;
+                let params = { mode };
+                if (mode === 'lot') {
+                    const p = state.profiles[state.symbol] || state.profiles.XAUUSD;
+                    params = {
+                        ...params,
+                        balance: state.balance,
+                        riskMode: state.riskMode,
+                        riskPercent: state.riskPercent,
+                        riskFixed: state.riskFixed,
+                        stopLoss: state.stopLoss,
+                        slippagePct: state.slippagePct,
+                        contractSize: p.contractSize,
+                        pipDefinition: p.pipDefinition,
+                        minLot: p.minLot,
+                        lotStep: p.lotStep
+                    };
+                } else if (mode === 'compound') {
+                    params = {
+                        ...params,
+                        initialBalance: state.initialBalance,
+                        returnPercent: state.returnPercent,
+                        numPeriods: state.numPeriods,
+                        frequency: state.compoundFrequency
+                    };
+                } else if (mode === 'risk_reward') {
+                    const p = state.profiles[state.rrSymbol] || state.profiles.XAUUSD;
+                    params = {
+                        ...params,
+                        balance: state.rrBalance,
+                        riskPercent: state.rrRiskPercent,
+                        entry: state.rrEntry,
+                        stop: state.rrStop,
+                        take: state.rrTake,
+                        contractSize: p.contractSize,
+                        pipDefinition: p.pipDefinition,
+                        minLot: p.minLot,
+                        lotStep: p.lotStep
+                    };
+                }
+                const key = JSON.stringify(params);
+                if (CalcWorker.lastParamsKey !== key) {
+                    CalcWorker.lastParamsKey = key;
+                    CalcWorker.worker.postMessage(params);
+                }
+            }
+        };
+        CalcWorker.lastParamsKey = null;
+
+        // === Canvas Visualizations ===
+        const Visuals = {
+            canvas: DOM.visualCanvas,
+            ctx: DOM.visualCanvas.getContext('2d', { alpha: false }),
+            DPR: Math.max(1, window.devicePixelRatio || 1),
+            current: { lots: 0, pipVal: 0, riskAmt: 0, riskPercent: 0, growthData: [] },
+            target: { lots: 0, pipVal: 0, riskAmt: 0, riskPercent: 0, growthData: [] },
+            EASE: 0.14,
+            lastTS: 0,
+            mouseX: 0,
+            mouseY: 0,
+            hoverIndex: -1,
+            resize: () => {
+                const rect = Visuals.canvas.getBoundingClientRect();
+                Visuals.canvas.width = Math.round(rect.width * Visuals.DPR);
+                Visuals.canvas.height = Math.round(rect.height * Visuals.DPR);
+                Visuals.ctx.setTransform(Visuals.DPR, 0, 0, Visuals.DPR, 0, 0);
+                Visuals.draw();
+            },
+            clear: () => {
+                Visuals.ctx.fillStyle = '#fff';
+                Visuals.ctx.fillRect(0, 0, Visuals.canvas.width / Visuals.DPR, Visuals.canvas.height / Visuals.DPR);
+            },
+            drawRing: (cx, cy, r, fraction) => {
+                Visuals.ctx.beginPath();
+                Visuals.ctx.lineWidth = 18;
+                Visuals.ctx.strokeStyle = '#f0f0f2';
+                Visuals.ctx.lineCap = 'round';
+                Visuals.ctx.arc(cx, cy, r, Math.PI * 1.05, Math.PI * 1.95);
+                Visuals.ctx.stroke();
+                const start = Math.PI * 1.05;
+                const end = start + Math.min(1, fraction) * (Math.PI * 0.9);
+                const g = Visuals.ctx.createLinearGradient(cx - r, cy, cx + r, cy);
+                g.addColorStop(0, 'rgba(0,113,227,0.95)');
+                g.addColorStop(1, 'rgba(14,165,233,0.95)');
+                Visuals.ctx.beginPath();
+                Visuals.ctx.strokeStyle = g;
+                Visuals.ctx.arc(cx, cy, r, start, end);
+                Visuals.ctx.stroke();
+                Visuals.ctx.beginPath();
+                Visuals.ctx.fillStyle = 'rgba(0,113,227,0.06)';
+                Visuals.ctx.arc(cx, cy, r + 28, 0, Math.PI * 2);
+                Visuals.ctx.fill();
+            },
+            drawRiskGauge: (cx, cy, r, fraction) => {
+                Visuals.ctx.beginPath();
+                Visuals.ctx.lineWidth = 12;
+                Visuals.ctx.strokeStyle = '#f0f0f2';
+                Visuals.ctx.lineCap = 'round';
+                Visuals.ctx.arc(cx, cy, r, Math.PI * 1.05, Math.PI * 1.95);
+                Visuals.ctx.stroke();
+                const start = Math.PI * 1.05;
+                const end = start + Math.min(1, fraction) * (Math.PI * 0.9);
+                const g = Visuals.ctx.createLinearGradient(cx - r, cy, cx + r, cy);
+                g.addColorStop(0, '#34C759');
+                g.addColorStop(0.5, '#FF9500');
+                g.addColorStop(1, '#FF3B30');
+                Visuals.ctx.beginPath();
+                Visuals.ctx.strokeStyle = g;
+                Visuals.ctx.arc(cx, cy, r, start, end);
+                Visuals.ctx.stroke();
+                Visuals.ctx.beginPath();
+                Visuals.ctx.fillStyle = 'rgba(52,199,89,0.06)';
+                Visuals.ctx.arc(cx, cy, r + 20, 0, Math.PI * 2);
+                Visuals.ctx.fill();
+            },
+            drawRRGauge: (cx, cy, r, rr) => {
+                const fraction = Math.min(1, rr / 5); // Scale to max 5:1
+                Visuals.ctx.beginPath();
+                Visuals.ctx.lineWidth = 12;
+                Visuals.ctx.strokeStyle = '#f0f0f2';
+                Visuals.ctx.lineCap = 'round';
+                Visuals.ctx.arc(cx, cy, r, Math.PI * 1.05, Math.PI * 1.95);
+                Visuals.ctx.stroke();
+                const start = Math.PI * 1.05;
+                const end = start + fraction * (Math.PI * 0.9);
+                const g = Visuals.ctx.createLinearGradient(cx - r, cy, cx + r, cy);
+                g.addColorStop(0, '#34C759');
+                g.addColorStop(0.5, '#FF9500');
+                g.addColorStop(1, '#FF3B30');
+                Visuals.ctx.beginPath();
+                Visuals.ctx.strokeStyle = g;
+                Visuals.ctx.arc(cx, cy, r, start, end);
+                Visuals.ctx.stroke();
+                Visuals.ctx.beginPath();
+                Visuals.ctx.fillStyle = 'rgba(52,199,89,0.06)';
+                Visuals.ctx.arc(cx, cy, r + 20, 0, Math.PI * 2);
+                Visuals.ctx.fill();
+            },
+            drawBarChart: (x, y, w, h, data) => {
+                Visuals.ctx.fillStyle = '#fbfbfd';
+                Visuals.ctx.fillRect(x, y, w, h);
+                const vals = [data.riskAmt, data.pipVal || data.profit || 0];
+                const labels = [data.pipVal ? 'Risk $' : 'Risk $', data.pipVal ? 'Pip$/lot' : 'Profit $'];
+                const max = Math.max(...vals, 1);
+                const barW = (w - 48) / vals.length;
+                vals.forEach((v, i) => {
+                    const bx = x + 24 + (barW + 12) * i;
+                    const bh = (v / max) * (h - 56);
+                    const top = y + h - 28 - bh;
+                    Visuals.ctx.fillStyle = i === 0 ? '#FFB86B' : '#00D084';
+                    Visuals.roundRect(bx, top, barW, bh, 8);
+                    Visuals.ctx.fill();
+                    Visuals.ctx.fillStyle = '#6E6E73';
+                    Visuals.ctx.font = '12px -apple-system, system-ui, Arial';
+                    Visuals.ctx.textAlign = 'center';
+                    Visuals.ctx.fillText(labels[i], bx + barW / 2, y + h - 6);
+                    Visuals.ctx.fillStyle = '#1D1D1F';
+                    Visuals.ctx.font = '13px -apple-system, system-ui, Arial';
+                    Visuals.ctx.fillText(Number(v).toLocaleString(undefined, { maximumFractionDigits: 2 }), bx + barW / 2, top - 8);
+                });
+            },
+            drawLineChart: (x, y, w, h, data) => {
+                if (data.length < 2) return;
+                Visuals.ctx.fillStyle = '#fbfbfd';
+                Visuals.ctx.fillRect(x, y, w, h);
+                const max = Math.max(...data);
+                const min = Math.min(...data);
+                const range = max - min || 1;
+                const stepX = w / (data.length - 1);
+                Visuals.ctx.beginPath();
+                Visuals.ctx.moveTo(x, y + h - ((data[0] - min) / range) * h);
+                for (let i = 1; i < data.length; i++) {
+                    Visuals.ctx.lineTo(x + i * stepX, y + h - ((data[i] - min) / range) * h);
+                }
+                const g = Visuals.ctx.createLinearGradient(x, y, x, y + h);
+                g.addColorStop(0, '#34C759');
+                g.addColorStop(1, '#00D084');
+                Visuals.ctx.strokeStyle = g;
+                Visuals.ctx.lineWidth = 3;
+                Visuals.ctx.stroke();
+                Visuals.ctx.lineTo(x + (data.length - 1) * stepX, y + h);
+                Visuals.ctx.lineTo(x, y + h);
+                Visuals.ctx.closePath();
+                const fillG = Visuals.ctx.createLinearGradient(x, y, x, y + h);
+                fillG.addColorStop(0, 'rgba(52,199,89,0.2)');
+                fillG.addColorStop(1, 'rgba(0,208,132,0.1)');
+                Visuals.ctx.fillStyle = fillG;
+                Visuals.ctx.fill();
+                Visuals.ctx.fillStyle = '#6E6E73';
+                Visuals.ctx.font = '12px -apple-system, system-ui, Arial';
+                Visuals.ctx.textAlign = 'center';
+                Visuals.ctx.fillText('Balance Growth', x + w / 2, y + 20);
+                if (Visuals.hoverIndex >= 0) {
+                    const hx = x + Visuals.hoverIndex * stepX;
+                    const hy = y + h - ((data[Visuals.hoverIndex] - min) / range) * h;
+                    Visuals.ctx.beginPath();
+                    Visuals.ctx.arc(hx, hy, 6, 0, 2 * Math.PI);
+                    Visuals.ctx.fillStyle = '#34C759';
+                    Visuals.ctx.fill();
+                }
+            },
+            roundRect: (x, y, w, h, r) => {
+                Visuals.ctx.beginPath();
+                Visuals.ctx.moveTo(x + r, y);
+                Visuals.ctx.arcTo(x + w, y, x + w, y + h, r);
+                Visuals.ctx.arcTo(x + w, y + h, x, y + h, r);
+                Visuals.ctx.arcTo(x, y + h, x, y, r);
+                Visuals.ctx.arcTo(x, y, x + w, y, r);
+                Visuals.ctx.closePath();
+            },
+            draw: () => {
+                Visuals.clear();
+                const W = Visuals.canvas.width / Visuals.DPR;
+                const H = Visuals.canvas.height / Visuals.DPR;
+                const mode = state.toolMode;
+                if (mode === 'lot') {
+                    const cx = Math.min(270, W * 0.36);
+                    Visuals.drawRing(cx, H * 0.35, 90, Math.min(1, Visuals.current.lots / Math.max(0.1, Math.max(3, Visuals.current.lots * 1.6))));
+                    Visuals.ctx.fillStyle = '#1D1D1F';
+                    Visuals.ctx.font = '600 24px -apple-system, system-ui, Arial';
+                    Visuals.ctx.textAlign = 'center';
+                    Visuals.ctx.fillText(Visuals.current.lots.toFixed(3), cx, H * 0.35 + 8);
+                    Visuals.ctx.fillStyle = '#6E6E73';
+                    Visuals.ctx.font = '13px -apple-system, system-ui, Arial';
+                    Visuals.ctx.fillText('Lots', cx, H * 0.35 - 28);
+                    Visuals.drawRiskGauge(cx, H * 0.75, 70, Visuals.current.riskPercent / 10); // Scale to 10%
+                    Visuals.ctx.fillStyle = '#1D1D1F';
+                    Visuals.ctx.font = '600 20px -apple-system, system-ui, Arial';
+                    Visuals.ctx.fillText(Visuals.current.riskPercent.toFixed(1) + '%', cx, H * 0.75 + 6);
+                    Visuals.ctx.fillStyle = '#6E6E73';
+                    Visuals.ctx.font = '13px -apple-system, system-ui, Arial';
+                    Visuals.ctx.fillText('Risk %', cx, H * 0.75 - 22);
+                    const x = cx + 160;
+                    const w = W - x - 24;
+                    const y = 36;
+                    const h = 220;
+                    Visuals.drawBarChart(x, y, w, h, { riskAmt: Visuals.current.riskAmt, pipVal: Visuals.current.pipVal });
+                    Visuals.ctx.fillStyle = '#6E6E73';
+                    Visuals.ctx.font = '13px -apple-system, system-ui, Arial';
+                    const p = state.profiles[state.symbol];
+                    Visuals.ctx.textAlign = 'left';
+                    Visuals.ctx.fillText(`Pair: ${state.symbol} • Contract: ${p.contractSize} • Pip: ${p.pipDefinition}`, 16, H - 44);
+                    Visuals.ctx.fillStyle = '#1D1D1F';
+                    Visuals.ctx.font = '13px -apple-system, system-ui, Arial';
+                    Visuals.ctx.fillText(`Stop Loss: ${state.stopLoss} • Balance: ${Number(state.balance).toLocaleString()}`, 16, H - 20);
+                } else if (mode === 'compound') {
+                    const x = 20;
+                    const y = 40;
+                    const w = W - 40;
+                    const h = H - 80;
+                    Visuals.drawLineChart(x, y, w, h, Visuals.current.growthData);
+                    Visuals.ctx.fillStyle = '#6E6E73';
+                    Visuals.ctx.font = '13px -apple-system, system-ui, Arial';
+                    Visuals.ctx.textAlign = 'left';
+                    Visuals.ctx.fillText(`Periods: 0 to ${state.numPeriods}`, 16, H - 44);
+                    Visuals.ctx.fillStyle = '#1D1D1F';
+                    Visuals.ctx.font = '13px -apple-system, system-ui, Arial';
+                    Visuals.ctx.fillText(`Initial: ${Utils.currency(state.initialBalance)} • Final: ${Utils.currency(state.compoundResult?.finalBalance || state.initialBalance)}`, 16, H - 20);
+                } else if (mode === 'risk_reward') {
+                    const cx = Math.min(270, W * 0.36);
+                    Visuals.drawRing(cx, H * 0.35, 90, Math.min(1, Visuals.current.lots / Math.max(0.1, Math.max(3, Visuals.current.lots * 1.6))));
+                    Visuals.ctx.fillStyle = '#1D1D1F';
+                    Visuals.ctx.font = '600 24px -apple-system, system-ui, Arial';
+                    Visuals.ctx.textAlign = 'center';
+                    Visuals.ctx.fillText(Visuals.current.lots.toFixed(3), cx, H * 0.35 + 8);
+                    Visuals.ctx.fillStyle = '#6E6E73';
+                    Visuals.ctx.font = '13px -apple-system, system-ui, Arial';
+                    Visuals.ctx.fillText('Lots', cx, H * 0.35 - 28);
+                    Visuals.drawRRGauge(cx, H * 0.75, 70, Visuals.current.riskPercent);
+                    Visuals.ctx.fillStyle = '#1D1D1F';
+                    Visuals.ctx.font = '600 20px -apple-system, system-ui, Arial';
+                    Visuals.ctx.fillText(`1:${Visuals.current.riskPercent.toFixed(2)}`, cx, H * 0.75 + 6);
+                    Visuals.ctx.fillStyle = '#6E6E73';
+                    Visuals.ctx.font = '13px -apple-system, system-ui, Arial';
+                    Visuals.ctx.fillText('R:R', cx, H * 0.75 - 22);
+                    const x = cx + 160;
+                    const w = W - x - 24;
+                    const y = 36;
+                    const h = 220;
+                    Visuals.drawBarChart(x, y, w, h, { riskAmt: Visuals.current.riskAmt, profit: state.rrResult?.potentialProfit || 0 });
+                    Visuals.ctx.fillStyle = '#6E6E73';
+                    Visuals.ctx.font = '13px -apple-system, system-ui, Arial';
+                    const p = state.profiles[state.rrSymbol];
+                    Visuals.ctx.textAlign = 'left';
+                    Visuals.ctx.fillText(`Pair: ${state.rrSymbol} • Contract: ${p.contractSize} • Pip: ${p.pipDefinition}`, 16, H - 44);
+                    Visuals.ctx.fillStyle = '#1D1D1F';
+                    Visuals.ctx.font = '13px -apple-system, system-ui, Arial';
+                    Visuals.ctx.fillText(`Entry: ${state.rrEntry.toFixed(4)} • SL: ${state.rrStop.toFixed(4)} • TP: ${state.rrTake.toFixed(4)}`, 16, H - 20);
+                }
+            },
+            updateTargets: (lots, pipVal, riskAmt, riskPercent) => {
+                Visuals.target = { lots, pipVal, riskAmt, riskPercent, growthData: Visuals.target.growthData };
+                if (!Visuals.animationFrame) {
+                    Visuals.animationFrame = requestAnimationFrame(Visuals.animate);
+                }
+            },
+            updateCompoundTargets: (growthData) => {
+                Visuals.target = { lots: Visuals.target.lots, pipVal: Visuals.target.pipVal, riskAmt: Visuals.target.riskAmt, riskPercent: Visuals.target.riskPercent, growthData };
+                if (!Visuals.animationFrame) {
+                    Visuals.animationFrame = requestAnimationFrame(Visuals.animate);
+                }
+            },
+            animate: (ts) => {
+                Visuals.current.lots += (Visuals.target.lots - Visuals.current.lots) * Visuals.EASE;
+                Visuals.current.pipVal += (Visuals.target.pipVal - Visuals.current.pipVal) * Visuals.EASE;
+                Visuals.current.riskAmt += (Visuals.target.riskAmt - Visuals.current.riskAmt) * Visuals.EASE;
+                Visuals.current.riskPercent += (Visuals.target.riskPercent - Visuals.current.riskPercent) * Visuals.EASE;
+                if (state.toolMode === 'compound') {
+                    if (Visuals.current.growthData.length === 0 || Visuals.current.growthData.length !== Visuals.target.growthData.length) {
+                        Visuals.current.growthData = Visuals.target.growthData.map(() => Visuals.current.growthData[0] || state.initialBalance);
+                    }
+                    Visuals.current.growthData = Visuals.current.growthData.map((val, i) => val + ((Visuals.target.growthData[i] || val) - val) * Visuals.EASE);
+                }
+                if (Math.abs(Visuals.target.lots - Visuals.current.lots) > 0.0002 || Math.abs(Visuals.target.pipVal - Visuals.current.pipVal) > 0.02 || Math.abs(Visuals.target.riskAmt - Visuals.current.riskAmt) > 0.1 || Math.abs(Visuals.target.riskPercent - Visuals.current.riskPercent) > 0.01 || ts - Visuals.lastTS > 1000 / 60) {
+                    Visuals.draw();
+                    Visuals.lastTS = ts;
+                }
+                const closeEnough = Math.abs(Visuals.target.lots - Visuals.current.lots) < 0.0002 && 
+                                   Math.abs(Visuals.target.pipVal - Visuals.current.pipVal) < 0.02 && 
+                                   Math.abs(Visuals.target.riskAmt - Visuals.current.riskAmt) < 0.1 && 
+                                   Math.abs(Visuals.target.riskPercent - Visuals.current.riskPercent) < 0.01;
+                if (closeEnough && (state.toolMode !== 'compound' || Visuals.current.growthData.every((val, i) => Math.abs((Visuals.target.growthData[i] || val) - val) < 1))) {
+                    cancelAnimationFrame(Visuals.animationFrame);
+                    Visuals.animationFrame = null;
+                } else {
+                    Visuals.animationFrame = requestAnimationFrame(Visuals.animate);
+                }
+            },
+            animationFrame: null,
+            initInteractivity: () => {
+                DOM.visualCanvas.addEventListener('mousemove', (ev) => {
+                    const rect = DOM.visualCanvas.getBoundingClientRect();
+                    Visuals.mouseX = ev.clientX - rect.left;
+                    Visuals.mouseY = ev.clientY - rect.top;
+                    if (state.toolMode === 'compound') {
+                        Visuals.updateHover();
+                    }
+                });
+                DOM.visualCanvas.addEventListener('mouseleave', () => {
+                    DOM.tooltip.style.display = 'none';
+                    Visuals.hoverIndex = -1;
+                    Visuals.draw();
+                });
+            },
+            updateHover: () => {
+                const x = 20;
+                const y = 40;
+                const w = Visuals.canvas.width / Visuals.DPR - 40;
+                const h = Visuals.canvas.height / Visuals.DPR - 80;
+                const data = Visuals.current.growthData;
+                if (data.length < 2) {
+                    DOM.tooltip.style.display = 'none';
+                    Visuals.hoverIndex = -1;
+                    Visuals.draw();
+                    return;
+                }
+                const stepX = w / (data.length - 1);
+                const hoverX = Visuals.mouseX;
+                let index = Math.round((hoverX - x) / stepX);
+                index = Math.max(0, Math.min(index, data.length - 1));
+                Visuals.hoverIndex = index;
+                DOM.tooltip.textContent = `Period: ${index}, Balance: ${Utils.currency(data[index])}`;
+                DOM.tooltip.style.display = 'block';
+                DOM.tooltip.style.left = `${Visuals.mouseX + 10}px`;
+                DOM.tooltip.style.top = `${Visuals.mouseY - 20}px`;
+                Visuals.draw();
+            }
+        };
+
+        // === Event Handlers ===
+        const Events = {
+            init: () => {
+                const watchedLot = [DOM.symbol, DOM.balance, DOM.riskMode, DOM.riskPercent, DOM.riskFixed, DOM.stopLoss, DOM.slippage, DOM.contractSize, DOM.pipDefinition, DOM.minLot, DOM.lotStep];
+                watchedLot.forEach(el => {
+                    el.addEventListener('input', Utils.debounce(() => {
+                        if (el === DOM.riskMode) UI.toggleRiskRows();
+                        if (state.toolMode === 'lot') CalcWorker.requestCalc();
+                    }, 200));
+                    el.addEventListener('change', () => {
+                        if (state.toolMode === 'lot') CalcWorker.requestCalc();
+                    });
+                });
+                const watchedCompound = [DOM.initialBalance, DOM.returnPercent, DOM.numPeriods, DOM.compoundFrequency];
+                watchedCompound.forEach(el => {
+                    el.addEventListener('input', Utils.debounce(() => {
+                        if (state.toolMode === 'compound') CalcWorker.requestCalc();
+                    }, 200));
+                    el.addEventListener('change', () => {
+                        if (state.toolMode === 'compound') CalcWorker.requestCalc();
+                    });
+                });
+                const watchedRR = [DOM.rrSymbol, DOM.rrBalance, DOM.rrRiskPercent, DOM.rrEntry, DOM.rrStop, DOM.rrTake, DOM.contractSize, DOM.pipDefinition, DOM.minLot, DOM.lotStep];
+                watchedRR.forEach(el => {
+                    el.addEventListener('input', Utils.debounce(() => {
+                        if (state.toolMode === 'risk_reward') CalcWorker.requestCalc();
+                    }, 200));
+                    el.addEventListener('change', () => {
+                        if (state.toolMode === 'risk_reward') CalcWorker.requestCalc();
+                    });
+                });
+                DOM.toolMode.addEventListener('change', () => {
+                    UI.switchMode();
+                    CalcWorker.requestCalc();
+                });
+                DOM.saveBtn.addEventListener('click', () => {
+                    StateManager.update();
+                    Persistence.saveState(state);
+                    UI.showNote('Settings saved locally');
+                });
+                DOM.resetBtn.addEventListener('click', () => {
+                    state = JSON.parse(JSON.stringify(DEFAULTS));
+                    StateManager.applyToUI();
+                    CalcWorker.requestCalc();
+                    UI.showNote('Reset to defaults');
+                });
+                document.addEventListener('keyup', (ev) => {
+                    if (ev.key === 'Escape') DOM.resetBtn.click();
+                });
+                window.addEventListener('resize', Utils.debounce(Visuals.resize, 140));
+                Visuals.initInteractivity();
+            }
+        };
+
+        // === Initialization ===
+        function init() {
+            CalcWorker.init();
+            StateManager.applyToUI();
+            Visuals.resize();
+            CalcWorker.requestCalc();
+            Events.init();
+            console.log('RawPips Premium initialized — Apple-inspired UI, worker-backed calculations, no external resources.');
+        }
+        init();
+    </script>
+</body>
+</html>
